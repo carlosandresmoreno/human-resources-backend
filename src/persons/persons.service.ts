@@ -97,15 +97,12 @@ export class PersonsService {
     return this.personModel
       .aggregate([
         {
-          $match: { salary: { $exists: true, $ne: null } },
+          $match: { salary: { $exists: true, $ne: null, $type: 'number' } },
         },
         {
-          $bucket: {
+          $bucketAuto: { 
             groupBy: '$salary',
-            boundaries: [
-              0, 25000, 50000, 75000, 100000, 125000, 150000, 175000, 200000,
-            ], 
-            default: 'Other', 
+            buckets: 10,
             output: {
               count: { $sum: 1 },
               minSalary: { $min: '$salary' },
@@ -118,9 +115,10 @@ export class PersonsService {
             _id: 0,
             range: {
               $concat: [
-                { $toString: '$_id' },
-                ' - ',
-                { $toString: { $add: ['$_id', 24999] } }, 
+                'De $',
+                { $toString: '$_id.min' },
+                ' a $',
+                { $toString: '$_id.max' },
               ],
             },
             count: 1,
