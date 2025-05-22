@@ -12,6 +12,14 @@ async function bootstrap() {
   }));
 
   app.setGlobalPrefix('api/v1');
+
+  app.enableCors({
+    origin: '*', 
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS', 
+    credentials: true, 
+    allowedHeaders: 'Content-Type, Accept, Authorization', 
+  });
+
   const config = new DocumentBuilder()
     .setTitle('Human Resources API')
     .setDescription('API documentation for the Human Resources management application.') 
