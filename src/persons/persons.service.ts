@@ -16,10 +16,33 @@ export class PersonsService {
     return newPerson.save();
   }
 
-  async findAll(page = 1, limit = 10): Promise<{ data: Person[], total: number, page: number, limit: number }> { 
+  async findAll(
+    page = 1,
+    limit = 10,
+    department?: string, 
+    minSalary?: number,   
+    maxSalary?: number,   
+  ): Promise<{ data: Person[]; total: number; page: number; limit: number }> {
     const skip = (page - 1) * limit;
-    const total = await this.personModel.countDocuments();
-    const data = await this.personModel.find().skip(skip).limit(limit).exec();
+    const filter: any = {}; 
+
+    if (department) {
+      filter.department = department; 
+    }
+
+    if (minSalary || maxSalary) {
+      filter.salary = {}; 
+      if (minSalary) {
+        filter.salary.$gte = minSalary; 
+      }
+      if (maxSalary) {
+        filter.salary.$lte = maxSalary; 
+      }
+    }
+
+    const total = await this.personModel.countDocuments(filter); 
+    const data = await this.personModel.find(filter).skip(skip).limit(limit).exec();
+
     return { data, total, page, limit };
   }
 
@@ -45,5 +68,70 @@ export class PersonsService {
       throw new NotFoundException(`Person with ID "${id}" not found.`);
     }
     return { message: 'Person successfully deleted.' };
+  }
+
+  async getPersonsByDepartment(): Promise<any[]> {
+    return this.personModel
+      .aggregate([
+        {
+          $group: {
+            _id: '$department',
+            count: { $sum: 1 }, 
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            department: '$_id', 
+            count: 1,
+          },
+        },
+        {
+          $sort: { department: 1 }, 
+        },
+      ])
+      .exec();
+  }
+
+  async getSalaryDistribution(): Promise<any[]> {
+    return this.personModel
+      .aggregate([
+        {
+          $match: { salary: { $exists: true, $ne: null } },
+        },
+        {
+          $bucket: {
+            groupBy: '$salary',
+            boundaries: [
+              0, 25000, 50000, 75000, 100000, 125000, 150000, 175000, 200000,
+            ], 
+            default: 'Other', 
+            output: {
+              count: { $sum: 1 },
+              minSalary: { $min: '$salary' },
+              maxSalary: { $max: '$salary' },
+            },
+          },
+        },
+        {
+          $project: {
+            _id: 0,
+            range: {
+              $concat: [
+                { $toString: '$_id' },
+                ' - ',
+                { $toString: { $add: ['$_id', 24999] } }, 
+              ],
+            },
+            count: 1,
+            minSalary: 1,
+            maxSalary: 1,
+          },
+        },
+        {
+          $sort: { _id: 1 }, 
+        },
+      ])
+      .exec();
   }
 }

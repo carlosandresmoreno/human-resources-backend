@@ -36,16 +36,55 @@ export class PersonsController {
 
   @Get()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Retrieve a list of all persons (employees) with pagination' })
-  @ApiResponse({ status: 200, description: 'List of persons retrieved successfully.', type: Object })
+  @ApiOperation({
+    summary: 'Retrieve a list of all persons (employees) with pagination and optional filters',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of persons retrieved successfully.',
+    type: Object,
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized.' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number for pagination (default: 1)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Number of items per page (default: 10)' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number for pagination (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Number of items per page (default: 10)',
+  })
+  @ApiQuery({
+    name: 'department',
+    required: false,
+    type: String,
+    description: 'Filter by department name (e.g., "Engineering")',
+  })
+  @ApiQuery({
+    name: 'minSalary',
+    required: false,
+    type: Number,
+    description: 'Filter by minimum salary',
+  })
+  @ApiQuery({
+    name: 'maxSalary',
+    required: false,
+    type: Number,
+    description: 'Filter by maximum salary',
+  })
   findAll(
     @Query('page') page = 1,
     @Query('limit') limit = 10,
+    @Query('department') department?: string, 
+    @Query('minSalary') minSalary?: string,   
+    @Query('maxSalary') maxSalary?: string,
   ) {
-    return this.personsService.findAll(+page, +limit);
+    const parsedMinSalary = minSalary ? parseFloat(minSalary) : undefined;
+    const parsedMaxSalary = maxSalary ? parseFloat(maxSalary) : undefined;
+    return this.personsService.findAll(+page, +limit, department, parsedMinSalary, parsedMaxSalary);
   }
 
   @Get(':id')
@@ -78,4 +117,38 @@ export class PersonsController {
   remove(@Param('id') id: string) {
     return this.personsService.remove(id);
   }
+
+
+  @Get('stats/by-department')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get the number of persons grouped by department',
+    description: 'Returns data suitable for a bar or pie chart showing department distribution.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Department distribution data retrieved successfully.',
+    type: Array,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  async getPersonsByDepartmentStats() {
+    return this.personsService.getPersonsByDepartment();
+  }
+
+  @Get('stats/salary-distribution')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Get salary distribution in ranges',
+    description: 'Returns data suitable for a histogram or bar chart showing salary ranges.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Salary distribution data retrieved successfully.',
+    type: Array,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized.' })
+  async getSalaryDistributionStats() {
+    return this.personsService.getSalaryDistribution();
+  }
+
 }

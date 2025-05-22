@@ -23,7 +23,7 @@ export class AuthController {
   @ApiOperation({ summary: 'Login an existing user and get a JWT token' })
   @ApiResponse({ status: 200, description: 'User successfully logged in, returns JWT token.', type: Object })
   @ApiResponse({ status: 401, description: 'Unauthorized (invalid credentials).' })
-  async login(@Body() loginUserDto: LoginUserDto) { // <-- Aquí es donde se asocia el DTO con el cuerpo de la solicitud
+  async login(@Body() loginUserDto: LoginUserDto) { 
     return this.authService.login(loginUserDto);
   }
 }
